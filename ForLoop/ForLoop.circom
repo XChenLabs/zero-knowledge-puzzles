@@ -9,14 +9,13 @@ template ForLoop() {
 // Your Code here..
 signal input a[2];
 signal output c;
-signal res[4];
+var tmp = 0;
 
-res[0] <== a[0] + a[1];
-for(var i=1; i<4; i++) {
-    res[i] <== res[i-1] + a[0] + a[1];
+for(var i=0; i<4; i++) {
+    tmp += a[0] + a[1];
 }
 
-c <== res[3];
+c <== tmp;
 
 }  
 
