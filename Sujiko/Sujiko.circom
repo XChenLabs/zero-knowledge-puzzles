@@ -15,50 +15,29 @@ include "../node_modules/circomlib/circuits/gates.circom";
 /// s[3]  s[4]  s[5]
 /// s[6]  s[7]  s[8]
 
-template Range() {
-    // your code here
-    signal input a, lowerbound, upperbound;
-    signal output out;
-
-    component lt = LessThan(252);
-    lt.in[0] <== a;
-    lt.in[1] <== lowerbound;
-    component gt = GreaterThan(252);
-    gt.in[0] <== a;
-    gt.in[1] <== upperbound;
-    component nor = NOR();
-    nor.a <== lt.out;
-    nor.b <== gt.out;
-
-    out <== nor.out;
-}
-
 template Sujiko () {
 
   signal input solution[9];
   signal input question[4];
   signal output out;
 
-  var conditions = 0;
-  //1. check if every number in solution is in range [1, 9] 
-  component range[9];
-  var sum = 0;
-  for(var i=0; i<9; i++) {
-    range[i] = Range();
-    range[i].a <== solution[i];
-    range[i].lowerbound <== 1;
-    range[i].upperbound <== 9;
-    conditions += range[i].out;
-
-    sum += solution[i];
+  
+  //1. check if number 1~9 appears in solution only once
+  var single = 0; 
+  component check[9][9];
+  for(var i=1; i<10; i++) {
+    for(var j=0; j<9; j++) {
+      check[i-1][j] = IsEqual();
+      check[i-1][j].in[0] <== i;
+      check[i-1][j].in[1] <== solution[j];
+      single += check[i-1][j].out;
+    }
+    1 === single;
+    single = 0;
   }
-  //2. check if the sum of solution is (1+...+9) = 45
-  component eq_sum = IsEqual();
-  eq_sum.in[0] <== 45;
-  eq_sum.in[1] <== sum;
-  conditions += eq_sum.out;
 
   //2. check if solution matches question
+  var conditions = 0;
   component match[4];
   for(var i=0; i<4; i++) {
     match[i] = IsEqual();
@@ -77,7 +56,7 @@ template Sujiko () {
   }
   //3. output
   component ret = IsEqual();
-  ret.in[0] <== 14;
+  ret.in[0] <== 4;
   ret.in[1] <== conditions;
 
   out <== ret.out;
