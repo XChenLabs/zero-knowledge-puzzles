@@ -19,25 +19,6 @@ include "../node_modules/circomlib/circuits/gates.circom";
     "out" is the signal output of the circuit. "out" is 1 if the solution is correct, otherwise 0.                                                                               
 */
 
-template Range() {
-    // your code here
-    signal input a, lowerbound, upperbound;
-    signal output out;
-
-    component lt = LessThan(252);
-    lt.in[0] <== a;
-    lt.in[1] <== lowerbound;
-    component gt = GreaterThan(252);
-    gt.in[0] <== a;
-    gt.in[1] <== upperbound;
-    component nor = NOR();
-    nor.a <== lt.out;
-    nor.b <== gt.out;
-
-    out <== nor.out;
-}
-
-
 template Sudoku () {
     // Question Setup 
     signal input  question[16];
@@ -91,47 +72,65 @@ template Sudoku () {
     3 === row4[3].out + row4[2].out + row4[1].out + row4[0].out; 
 
     // Write your solution from here.. Good Luck!
-    //1. check every cell in solution is in range [1, 4]
-    var range_res = 0;
-    component range[16];
+    //1. check if solution matches question:
+    //that is: let solution subtracts question, each row has exactly one zero
+    component match[16];
     for(var i=0; i<16; i++) {
-        range[i] = Range();
-        range[i].a <== solution[i];
-        range[i].lowerbound <== 1;
-        range[i].upperbound <== 4;
-        range_res += range[i].out;
+        match[i] = IsZero();
+        match[i].in <== solution[i] - question[i];
     }
-    component eq_range = IsEqual();
-    eq_range.in[0] <== 16;
-    eq_range.in[1] <== range_res;
-    //2. check the sum of every row and col is (1+2+3+4)=10
-    var row[4];
-    component eq_row[4];
-    var col[4];
-    component eq_col[4];
     for(var i=0; i<4; i++) {
-        row[i] = 0;
-        eq_row[i] = IsEqual();
-        col[i] = 0;
-        eq_col[i] = IsEqual();
-        for(var j=0; j<4; j++) {
-            row[i] += solution[i*4+j];
-            col[i] += solution[i+j*4];
+        1 === match[i*4].out + match[i*4+1].out + match[i*4+2].out + match[i*4+3].out;
+    }
+
+    //2. check if solution is correct
+    //each row, col and sub-box has exactly [1,2,3,4]
+    component check[4][16];
+    for(var i=1; i<=4; i++) {
+        for(var j=0; j<16; j++) {
+            check[i-1][j] = IsEqual();
+            check[i-1][j].in[0] <== i;
+            check[i-1][j].in[1] <== solution[j];
         }
-        eq_row[i].in[0] <== 10;
-        eq_row[i].in[1] <== row[i];
-        eq_col[i].in[0] <== 10;
-        eq_col[i].in[1] <== col[i];
     }
-    //3.output
-    component ret = MultiAND(9);
-    ret.in[0] <== eq_range.out;
-    for(var i=0; i<4; i++) {
-        ret.in[i+1] <== eq_row[i].out;
-        ret.in[i+5] <== eq_col[i].out;
+    //row check
+    var cons = 0;
+    component rowcheck[4][4];
+    for(var i=1; i<=4; i++) {
+        for(var j=0; j<4; j++) {
+            rowcheck[i-1][j] = IsEqual();
+            rowcheck[i-1][j].in[0] <== 1;
+            rowcheck[i-1][j].in[1] <== check[i-1][j*4].out + check[i-1][j*4+1].out + check[i-1][j*4+2].out + check[i-1][j*4+3].out;
+            cons += rowcheck[i-1][j].out;
+        }
     }
+    //col check
+    component colcheck[4][4];
+    for(var i=1; i<=4; i++) {
+        for(var j=0; j<4; j++) {
+            colcheck[i-1][j] = IsEqual();
+            colcheck[i-1][j].in[0] <== 1;
+            colcheck[i-1][j].in[1] <== check[i-1][j].out + check[i-1][j+4].out + check[i-1][j+8].out + check[i-1][j+12].out;
+            cons += colcheck[i-1][j].out;
+        }
+    }
+    //box check
+    component boxcheck[4][4];
+    var boxpos[4] = [0, 2, 8, 10];
+    for(var i=1; i<=4; i++) {
+        for(var j=0; j<4; j++) {
+            boxcheck[i-1][j] = IsEqual();
+            boxcheck[i-1][j].in[0] <== 1;
+            boxcheck[i-1][j].in[1] <== check[i-1][boxpos[j]].out + check[i-1][boxpos[j]+1].out + check[i-1][boxpos[j]+4].out + check[i-1][boxpos[j]+5].out;
+            cons += boxcheck[i-1][j].out;
+        }
+    }
+    //out
+    component ret = IsEqual();
+    ret.in[0] <== 48;
+    ret.in[1] <== cons;
+
     out <== ret.out;
-   
 }
 
 
