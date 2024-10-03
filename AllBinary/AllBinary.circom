@@ -8,17 +8,14 @@ include "../node_modules/circomlib/circuits/comparators.circom";
 template AllBinary(n) {
     signal input in[n];
 
-    component check[2][n];
-    for(var i=0; i<2; i++) {
-        for(var j=0; j<n; j++) {
-            check[i][j] = IsEqual();
-            check[i][j].in[0] <== i;
-            check[i][j].in[1] <== in[j];
-        }
-    }
-
+    component check[n][2];
     for(var i=0; i<n; i++) {
-        1 === check[0][i].out + check[1][i].out;
+        for(var j=0; j<2; j++) {
+            check[i][j] = IsEqual();
+            check[i][j].in[0] <== j;
+            check[i][j].in[1] <== in[i];
+        }
+        1 === check[i][0].out + check[i][1].out;
     }
 }
 
