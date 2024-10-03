@@ -16,17 +16,24 @@ template Range() {
     signal input a, lowerbound, upperbound;
     signal output out;
 
-    component lt = LessThan(252);
-    lt.in[0] <== a;
-    lt.in[1] <== lowerbound;
-    component gt = GreaterThan(252);
-    gt.in[0] <== a;
-    gt.in[1] <== upperbound;
-    component nor = NOR();
-    nor.a <== lt.out;
-    nor.b <== gt.out;
+    component valid_para = LessEqThan(252);
+    valid_para.in[0] <== lowerbound;
+    valid_para.in[1] <== upperbound;
+    1 === valid_para.out;
 
-    out <== nor.out;
+    component upper = LessEqThan(252);
+    upper.in[0] <== a;
+    upper.in[1] <== upperbound;
+    component lower = GreaterEqThan(252);
+    lower.in[0] <== a;
+    lower.in[1] <== lowerbound;
+
+    component and = AND();
+    and.a <== upper.out;
+    and.b <== lower.out;
+
+    out <== and.out;
+
 }
 
 component main  = Range();
